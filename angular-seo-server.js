@@ -9,6 +9,11 @@ var server = require('webserver').create();
 var port = parseInt(system.args[1]);
 var urlPrefix = system.args[2];
 
+if (urlPrefix.indexOf('http') != 0) {
+	urlPrefix = "http://" + urlPrefix;
+}
+
+// TODO: this is not compatible with non-hashbang params ?
 var parse_qs = function(s) {
     var queryString = {};
     var a = document.createElement("a");
@@ -28,24 +33,27 @@ var renderHtml = function(url, cb) {
         cb(page.content);
         page.close();
     };
-//    page.onConsoleMessage = function(msg, lineNum, sourceId) {
-//        console.log('CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")');
-//    };
     page.onInitialized = function() {
        page.evaluate(function() {
             setTimeout(function() {
                 window.callPhantom();
-            }, 10000);
+            }, 5000);
         });
     };
     page.open(url);
 };
 
-server.listen(port, function (request, response) {
+// keepAlive: false is required since no Content-Length header is sent http://phantomjs.org/api/webserver/method/listen.html
+server.listen(port, {'keepAlive': false}, function (request, response) {
     var route = parse_qs(request.url)._escaped_fragment_;
     var url = urlPrefix
       + request.url.slice(1, request.url.indexOf('?'))
-      + '#!' + decodeURIComponent(route);
+      + '#!';
+    if (route) {
+    	url += decodeURIComponent(route);
+    }
+	// TODO: command line flag to turn this logging on or off
+    console.log(url);
     renderHtml(url, function(html) {
         response.statusCode = 200;
         response.write(html);
