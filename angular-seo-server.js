@@ -5,6 +5,7 @@ if (system.args.length < 3) {
     phantom.exit();
 }
 
+// http://phantomjs.org/api/webserver/
 var server = require('webserver').create();
 var port = parseInt(system.args[1]);
 var urlPrefix = system.args[2];
@@ -29,10 +30,13 @@ var renderHtml = function(url, cb) {
     var page = require('webpage').create();
     page.settings.loadImages = false;
     page.settings.localToRemoteUrlAccessEnabled = true;
-    page.onCallback = function() {
-        cb(page.content);
+    page.onCallback = function(data) {
+		// fired by window.callPhantom (fired by $scope.htmlReady() )
+		var status = data && data.status ? data.status : 200;
+        cb(page.content, status);
         page.close();
     };
+	// This callback is invoked after the web page is created but before a URL is loaded.
     page.onInitialized = function() {
        page.evaluate(function() {
             setTimeout(function() {
@@ -54,8 +58,9 @@ server.listen(port, {'keepAlive': false}, function (request, response) {
     }
 	// TODO: command line flag to turn this logging on or off
     console.log(url);
-    renderHtml(url, function(html) {
-        response.statusCode = 200;
+    renderHtml(url, function(html, statusCode) {
+        response.statusCode = statusCode;
+		response.setHeader('Content-Type', 'text/html');
         response.write(html);
         response.close();
     });
