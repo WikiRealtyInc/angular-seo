@@ -14,18 +14,6 @@ if (urlPrefix.indexOf('http') != 0) {
 	urlPrefix = "http://" + urlPrefix;
 }
 
-// TODO: this is not compatible with non-hashbang params ?
-var parse_qs = function(s) {
-    var queryString = {};
-    var a = document.createElement("a");
-    a.href = s;
-    a.search.replace(
-        new RegExp("([^?=&]+)(=([^&]*))?", "g"),
-        function($0, $1, $2, $3) { queryString[$1] = $3; }
-    );
-    return queryString;
-};
-
 var renderHtml = function(url, cb) {
     var page = require('webpage').create();
     page.settings.loadImages = false;
@@ -49,10 +37,11 @@ var renderHtml = function(url, cb) {
 
 // keepAlive: false is required since no Content-Length header is sent http://phantomjs.org/api/webserver/method/listen.html
 server.listen(port, {'keepAlive': false}, function (request, response) {
-    var route = parse_qs(request.url)._escaped_fragment_;
+    // Route should be everything after the _escaped_fragment_=
+    var route = request.url.substring(request.url.indexOf('_escaped_fragment_=') + 19) || '';
     var url = urlPrefix
       + request.url.slice(1, request.url.indexOf('?'))
-      + '#!';
+      + '/#!';
     if (route) {
     	url += decodeURIComponent(route);
     }
