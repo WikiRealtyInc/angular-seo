@@ -24,6 +24,10 @@ var renderHtml = function(url, cb) {
         cb(page.content, status);
         page.close();
     };
+    page.viewportSize = {
+        width: 1200,
+        height: 1200
+    };
 	// This callback is invoked after the web page is created but before a URL is loaded.
     page.onInitialized = function() {
        page.evaluate(function() {
